@@ -12,7 +12,7 @@ PYTHON_VERSION=$(cat runtime.txt)
 # Updated to check if it's pypy
 if [[ "${PYTHON_VERSION}" == "pypy2.7"* ]]; then
   PYPY_VERSION=$(echo "${PYTHON_VERSION}" | cut -d '-' -f 2)
-  PYTHON_URL="https://downloads.python.org/pypy/${PYPY_VERSION}-linux64.tar.bz2"
+  PYTHON_URL="https://downloads.python.org/pypy/${PYTHON_VERSION}-linux64.tar.bz2"
   puts-warn "Requested runtime '${PYTHON_VERSION}' is at '${PYTHON_URL}'"
 else
   PYTHON_URL="${S3_BASE_URL}/${STACK}/runtimes/${PYTHON_VERSION}.tar.gz"
