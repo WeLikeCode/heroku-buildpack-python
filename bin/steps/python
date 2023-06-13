@@ -10,7 +10,7 @@ PYTHON_VERSION=$(cat runtime.txt)
 
 # The location of the pre-compiled python binary.
 # Updated to check if it's pypy
-if [[ "${PYTHON_VERSION}" == "pypy-2.7"* ]]; then
+if [[ "${PYTHON_VERSION}" == "pypy2.7"* ]]; then
   PYPY_VERSION=$(echo "${PYTHON_VERSION}" | cut -d '-' -f 2)
   PYTHON_URL="https://downloads.python.org/pypy/${PYPY_VERSION}-linux64.tar.bz2"
 else
@@ -77,7 +77,7 @@ case "${PYTHON_VERSION}" in
   python-3.6.*)
     eol_python_version_error "3.6" "December 23rd, 2021"
     ;;
-  pypy-2.7.*)
+  pypy2.7.*)
     puts-step "Installing PyPy 2.7"
     mkdir -p .heroku/python
 
