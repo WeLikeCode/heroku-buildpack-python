@@ -13,6 +13,7 @@ PYTHON_VERSION=$(cat runtime.txt)
 if [[ "${PYTHON_VERSION}" == "pypy2.7"* ]]; then
   PYPY_VERSION=$(echo "${PYTHON_VERSION}" | cut -d '-' -f 2)
   PYTHON_URL="https://downloads.python.org/pypy/${PYPY_VERSION}-linux64.tar.bz2"
+  puts-warn "Requested runtime '${PYTHON_VERSION}' is at '${PYTHON_URL}'"
 else
   PYTHON_URL="${S3_BASE_URL}/${STACK}/runtimes/${PYTHON_VERSION}.tar.gz"
 fi
@@ -86,10 +87,10 @@ case "${PYTHON_VERSION}" in
       exit 1
     fi
 
-    ln -s .heroku/python/${PYPY_VERSION}-linux64/bin/pypy .heroku/python/bin/python
+    #ln -s .heroku/python/${PYTHON_VERSION}-linux64/bin/pypy .heroku/python/bin/python
 
-    echo "$PYTHON_VERSION" > .heroku/python-version
-    echo "$STACK" > .heroku/python-stack
+    #echo "$PYTHON_VERSION" > .heroku/python-version
+    #echo "$STACK" > .heroku/python-stack
 
     hash -r
     ;;
