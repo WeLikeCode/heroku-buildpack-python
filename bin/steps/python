@@ -224,5 +224,6 @@ else
 
   /app/.heroku/python/bin/python "${BUNDLED_PIP_WHEEL}/pip" install --quiet --disable-pip-version-check --no-cache-dir \
     "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" "wheel==${WHEEL_VERSION}"
+  hash -r
+
 fi
-hash -r
