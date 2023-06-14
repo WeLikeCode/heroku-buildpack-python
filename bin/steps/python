@@ -31,11 +31,17 @@ else
   PYTHON_URL="${S3_BASE_URL}/${STACK}/runtimes/${PYTHON_VERSION}.tar.gz"
 fi
 
-if ! curl --output /dev/null --silent --head --fail --retry 3 --retry-connrefused --connect-timeout 10 "${PYTHON_URL}"; then
-  puts-warn "Requested runtime '${PYTHON_VERSION}' is not available for this stack (${STACK})."
-  puts-warn "For supported versions, see: https://devcenter.heroku.com/articles/python-support"
-  exit 1
+
+if [[ "${PYTHON_VERSION}" == "python-2.7"* ]]; then
+  puts-warn "USing old python2"
+else
+  if ! curl --output /dev/null --silent --head --fail --retry 3 --retry-connrefused --connect-timeout 10 "${PYTHON_URL}"; then
+    puts-warn "Requested runtime '${PYTHON_VERSION}' is not available for this stack (${STACK})."
+    puts-warn "For supported versions, see: https://devcenter.heroku.com/articles/python-support"
+    exit 1
+  fi
 fi
+
 
 function eol_python_version_error() {
   local major_version="${1}"
