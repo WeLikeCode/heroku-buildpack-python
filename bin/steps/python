@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+
+function topic() {
+  echo "-----> $*"
+}
+
+function indent() {
+  c='s/^/       /'
+  case $(uname) in
+    Darwin) sed -l "$c";;
+    *)      sed -u "$c";;
+  esac
+}
+
 # TODO: Replace runtime-fixer with a bash equivalent, since currently on rebuilds it
 # gets run with the cached Python install (rather than system Python), which means it
 # fails to run with glibc errors on stack downgrades (see spec/hatchet/stack_spec.rb).
@@ -82,10 +95,18 @@ case "${PYTHON_VERSION}" in
     puts-step "Installing PyPy 2.7"
     mkdir -p .heroku/python
 
-    if ! curl --silent --show-error --fail --retry 3 --retry-connrefused --connect-timeout 10 "${PYTHON_URL}" | tar -jfxC .heroku/python; then
-      puts-warn "Failed to download/install ${PYTHON_VERSION}"
-      exit 1
-    fi
+    #if ! curl --silent --show-error --fail --retry 3 --retry-connrefused --connect-timeout 10 "${PYTHON_URL}" | tar -jfxC .heroku/python; then
+    #  puts-warn "Failed to download/install ${PYTHON_VERSION}"
+    #  exit 1
+    #fi
+    topic "Updating apt caches"
+    apt-get update | indent
+
+    topic "Fetching .debs for python2"
+    apt-get  -y -d install --reinstall python2-dev | indent 
+
+    curl -sSL  https://bootstrap.pypa.io/pip/2.7/get-pip.py  -o get-pip.py
+    python2 get-pip.py
 
     #ln -s .heroku/python/${PYTHON_VERSION}-linux64/bin/pypy .heroku/python/bin/python
 
@@ -145,6 +166,8 @@ else
 
   
   if [[ "${PYTHON_VERSION}" == "pypy-2.7"* ]]; then
+    rm -rf .heroku/python
+    mkdir -p .heroku/python
     if ! curl --silent --show-error --fail --retry 3 --retry-connrefused --connect-timeout 10 "${PYTHON_URL}" -o "${PYTHON_VERSION}" && tar -xjf "${PYTHON_VERSION}"  -C .heroku/python; then
       # The Python version was confirmed to exist previously, so any failure here is due to
       # a networking issue or archive/buildpack bug rather than the runtime not existing.
@@ -168,29 +191,32 @@ else
   hash -r
 fi
 
-PIP_VERSION='23.1.2'
-SETUPTOOLS_VERSION='67.8.0'
-WHEEL_VERSION='0.40.0'
+if [[ "${PYTHON_VERSION}" == "python-2.7"* ]]; then
+  puts-step "Installing pip .. "
+else
+  PIP_VERSION='23.1.2'
+  SETUPTOOLS_VERSION='67.8.0'
+  WHEEL_VERSION='0.40.0'
 
-puts-step "Installing pip ${PIP_VERSION}, setuptools ${SETUPTOOLS_VERSION} and wheel ${WHEEL_VERSION}"
+  puts-step "Installing pip ${PIP_VERSION}, setuptools ${SETUPTOOLS_VERSION} and wheel ${WHEEL_VERSION}"
 
-# Python bundles Pip within its standard library, which we can use to install our chosen
-# pip version from PyPI, saving us from having to download the usual pip bootstrap script.
-# We have to use a glob since the bundled wheel filename contains the pip version, which
-# differs between Python versions. We also have to handle the case where there are multiple
-# matching pip wheels, since in some versions of Python (eg 3.9.0) multiple versions of pip
-# were accidentally bundled upstream. Note: This implementation relies upon `nullglob` being
-# set, which is the case thanks to the `bin/utils` that was run earlier.
-BUNDLED_PIP_WHEEL_LIST=(.heroku/python/lib/python*/ensurepip/_bundled/pip-*.whl)
-BUNDLED_PIP_WHEEL="${BUNDLED_PIP_WHEEL_LIST[0]}"
+  # Python bundles Pip within its standard library, which we can use to install our chosen
+  # pip version from PyPI, saving us from having to download the usual pip bootstrap script.
+  # We have to use a glob since the bundled wheel filename contains the pip version, which
+  # differs between Python versions. We also have to handle the case where there are multiple
+  # matching pip wheels, since in some versions of Python (eg 3.9.0) multiple versions of pip
+  # were accidentally bundled upstream. Note: This implementation relies upon `nullglob` being
+  # set, which is the case thanks to the `bin/utils` that was run earlier.
+  BUNDLED_PIP_WHEEL_LIST=(.heroku/python/lib/python*/ensurepip/_bundled/pip-*.whl)
+  BUNDLED_PIP_WHEEL="${BUNDLED_PIP_WHEEL_LIST[0]}"
 
-if [[ -z "${BUNDLED_PIP_WHEEL}" ]]; then
-  mcount "failure.python.locate-bundled-pip-wheel"
-  puts-warn "Failed to locate the bundled pip wheel"
-  exit 1
+  if [[ -z "${BUNDLED_PIP_WHEEL}" ]]; then
+    mcount "failure.python.locate-bundled-pip-wheel"
+    puts-warn "Failed to locate the bundled pip wheel"
+    exit 1
+  fi
+
+  /app/.heroku/python/bin/python "${BUNDLED_PIP_WHEEL}/pip" install --quiet --disable-pip-version-check --no-cache-dir \
+    "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" "wheel==${WHEEL_VERSION}"
 fi
-
-/app/.heroku/python/bin/python "${BUNDLED_PIP_WHEEL}/pip" install --quiet --disable-pip-version-check --no-cache-dir \
-  "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" "wheel==${WHEEL_VERSION}"
-
 hash -r
